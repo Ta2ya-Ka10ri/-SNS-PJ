@@ -11,36 +11,37 @@
 
 namespace Symfony\Component\Translation\Tests\Loader;
 
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\Config\Resource\FileResource;
-use Symfony\Component\Translation\Loader\PhpFileLoader;
+use Symfony\Component\Config\Resource\DirectoryResource;
+use Symfony\Component\Translation\Loader\IcuResFileLoader;
 
-class PhpFileLoaderTest extends TestCase
+/**
+ * @requires extension intl
+ */
+class IcuResFileLoaderTest extends LocalizedTestCase
 {
     public function testLoad()
     {
-        $loader = new PhpFileLoader();
-        $resource = __DIR__.'/../fixtures/resources.php';
+        // resource is build using genrb command
+        $loader = new IcuResFileLoader();
+        $resource = __DIR__.'/../fixtures/resourcebundle/res';
         $catalogue = $loader->load($resource, 'en', 'domain1');
 
         $this->assertEquals(['foo' => 'bar'], $catalogue->all('domain1'));
         $this->assertEquals('en', $catalogue->getLocale());
-        $this->assertEquals([new FileResource($resource)], $catalogue->getResources());
+        $this->assertEquals([new DirectoryResource($resource)], $catalogue->getResources());
     }
 
     public function testLoadNonExistingResource()
     {
         $this->expectException('Symfony\Component\Translation\Exception\NotFoundResourceException');
-        $loader = new PhpFileLoader();
-        $resource = __DIR__.'/../fixtures/non-existing.php';
-        $loader->load($resource, 'en', 'domain1');
+        $loader = new IcuResFileLoader();
+        $loader->load(__DIR__.'/../fixtures/non-existing.txt', 'en', 'domain1');
     }
 
-    public function testLoadThrowsAnExceptionIfFileNotLocal()
+    public function testLoadInvalidResource()
     {
         $this->expectException('Symfony\Component\Translation\Exception\InvalidResourceException');
-        $loader = new PhpFileLoader();
-        $resource = 'http://example.com/resources.php';
-        $loader->load($resource, 'en', 'domain1');
+        $loader = new IcuResFileLoader();
+        $loader->load(__DIR__.'/../fixtures/resourcebundle/corrupted', 'en', 'domain1');
     }
 }

@@ -13,14 +13,14 @@ namespace Symfony\Component\Translation\Tests\Loader;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Resource\FileResource;
-use Symfony\Component\Translation\Loader\YamlFileLoader;
+use Symfony\Component\Translation\Loader\JsonFileLoader;
 
-class YamlFileLoaderTest extends TestCase
+class JsonFileLoaderTest extends TestCase
 {
     public function testLoad()
     {
-        $loader = new YamlFileLoader();
-        $resource = __DIR__.'/../fixtures/resources.yml';
+        $loader = new JsonFileLoader();
+        $resource = __DIR__.'/../fixtures/resources.json';
         $catalogue = $loader->load($resource, 'en', 'domain1');
 
         $this->assertEquals(['foo' => 'bar'], $catalogue->all('domain1'));
@@ -30,8 +30,8 @@ class YamlFileLoaderTest extends TestCase
 
     public function testLoadDoesNothingIfEmpty()
     {
-        $loader = new YamlFileLoader();
-        $resource = __DIR__.'/../fixtures/empty.yml';
+        $loader = new JsonFileLoader();
+        $resource = __DIR__.'/../fixtures/empty.json';
         $catalogue = $loader->load($resource, 'en', 'domain1');
 
         $this->assertEquals([], $catalogue->all('domain1'));
@@ -42,24 +42,17 @@ class YamlFileLoaderTest extends TestCase
     public function testLoadNonExistingResource()
     {
         $this->expectException('Symfony\Component\Translation\Exception\NotFoundResourceException');
-        $loader = new YamlFileLoader();
-        $resource = __DIR__.'/../fixtures/non-existing.yml';
+        $loader = new JsonFileLoader();
+        $resource = __DIR__.'/../fixtures/non-existing.json';
         $loader->load($resource, 'en', 'domain1');
     }
 
-    public function testLoadThrowsAnExceptionIfFileNotLocal()
+    public function testParseException()
     {
         $this->expectException('Symfony\Component\Translation\Exception\InvalidResourceException');
-        $loader = new YamlFileLoader();
-        $resource = 'http://example.com/resources.yml';
-        $loader->load($resource, 'en', 'domain1');
-    }
-
-    public function testLoadThrowsAnExceptionIfNotAnArray()
-    {
-        $this->expectException('Symfony\Component\Translation\Exception\InvalidResourceException');
-        $loader = new YamlFileLoader();
-        $resource = __DIR__.'/../fixtures/non-valid.yml';
+        $this->expectExceptionMessage('Error parsing JSON - Syntax error, malformed JSON');
+        $loader = new JsonFileLoader();
+        $resource = __DIR__.'/../fixtures/malformed.json';
         $loader->load($resource, 'en', 'domain1');
     }
 }

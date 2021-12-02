@@ -13,14 +13,14 @@ namespace Symfony\Component\Translation\Tests\Loader;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Resource\FileResource;
-use Symfony\Component\Translation\Loader\YamlFileLoader;
+use Symfony\Component\Translation\Loader\CsvFileLoader;
 
-class YamlFileLoaderTest extends TestCase
+class CsvFileLoaderTest extends TestCase
 {
     public function testLoad()
     {
-        $loader = new YamlFileLoader();
-        $resource = __DIR__.'/../fixtures/resources.yml';
+        $loader = new CsvFileLoader();
+        $resource = __DIR__.'/../fixtures/resources.csv';
         $catalogue = $loader->load($resource, 'en', 'domain1');
 
         $this->assertEquals(['foo' => 'bar'], $catalogue->all('domain1'));
@@ -30,8 +30,8 @@ class YamlFileLoaderTest extends TestCase
 
     public function testLoadDoesNothingIfEmpty()
     {
-        $loader = new YamlFileLoader();
-        $resource = __DIR__.'/../fixtures/empty.yml';
+        $loader = new CsvFileLoader();
+        $resource = __DIR__.'/../fixtures/empty.csv';
         $catalogue = $loader->load($resource, 'en', 'domain1');
 
         $this->assertEquals([], $catalogue->all('domain1'));
@@ -42,24 +42,16 @@ class YamlFileLoaderTest extends TestCase
     public function testLoadNonExistingResource()
     {
         $this->expectException('Symfony\Component\Translation\Exception\NotFoundResourceException');
-        $loader = new YamlFileLoader();
-        $resource = __DIR__.'/../fixtures/non-existing.yml';
+        $loader = new CsvFileLoader();
+        $resource = __DIR__.'/../fixtures/not-exists.csv';
         $loader->load($resource, 'en', 'domain1');
     }
 
-    public function testLoadThrowsAnExceptionIfFileNotLocal()
+    public function testLoadNonLocalResource()
     {
         $this->expectException('Symfony\Component\Translation\Exception\InvalidResourceException');
-        $loader = new YamlFileLoader();
-        $resource = 'http://example.com/resources.yml';
-        $loader->load($resource, 'en', 'domain1');
-    }
-
-    public function testLoadThrowsAnExceptionIfNotAnArray()
-    {
-        $this->expectException('Symfony\Component\Translation\Exception\InvalidResourceException');
-        $loader = new YamlFileLoader();
-        $resource = __DIR__.'/../fixtures/non-valid.yml';
+        $loader = new CsvFileLoader();
+        $resource = 'http://example.com/resources.csv';
         $loader->load($resource, 'en', 'domain1');
     }
 }
