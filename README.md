@@ -1,45 +1,68 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://laravel.com/assets/img/components/logo-laravel.svg"></a></p>
+Mockery
+=======
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+[![Build Status](https://travis-ci.org/mockery/mockery.png?branch=0.9)](http://travis-ci.org/mockery/mockery)
+[![Latest Stable Version](https://poser.pugx.org/mockery/mockery/v/stable.png)](https://packagist.org/packages/mockery/mockery)
+[![Total Downloads](https://poser.pugx.org/mockery/mockery/downloads.png)](https://packagist.org/packages/mockery/mockery)
 
-## About Laravel
 
-> **Note:** This repository contains the core code of the Laravel framework. If you want to build an application using Laravel 5, visit the main [Laravel repository](https://github.com/laravel/laravel).
+Mockery is a simple yet flexible PHP mock object framework for use in unit testing
+with PHPUnit, PHPSpec or any other testing framework. Its core goal is to offer a
+test double framework with a succinct API capable of clearly defining all possible
+object operations and interactions using a human readable Domain Specific Language
+(DSL). Designed as a drop in alternative to PHPUnit's phpunit-mock-objects library,
+Mockery is easy to integrate with PHPUnit and can operate alongside
+phpunit-mock-objects without the World ending.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable, creative experience to be truly fulfilling. Laravel attempts to take the pain out of development by easing common tasks used in the majority of web projects, such as:
+Mockery is released under a New BSD License.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The current released version on Packagist is 0.9.3.
+The current released version for PEAR is 0.9.0. Composer users may instead opt to use
+the current master branch aliased to 0.9.x-dev.
 
-Laravel is accessible, yet powerful, providing tools needed for large, robust applications. A superb combination of simplicity, elegance, and innovation gives you a complete toolset required to build any application with which you are tasked
+## Installation
 
-## Learning Laravel
+To install Mockery, run the command below and you will get the latest
+version
 
-Laravel has the most extensive and thorough documentation and video tutorial library of any modern web application framework. The [Laravel documentation](https://laravel.com/docs) is in-depth and complete, making it a breeze to get started learning the framework.
+```sh
+composer require mockery/mockery
+```
 
-If you're not in the mood to read, [Laracasts](https://laracasts.com) contains over 1100 video tutorials covering a range of topics including Laravel, modern PHP, unit testing, JavaScript, and more. Boost the skill level of yourself and your entire team by digging into our comprehensive video library.
+If you want to run the tests:
 
-## Contributing
+```sh
+vendor/bin/phpunit
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](http://laravel.com/docs/contributions).
+####Note
 
-## Code of Conduct
+The future Mockery 0.9.4 release will be the final version to have PHP 5.3
+as a minimum requirement. The minimum PHP requirement will thereafter move to
+PHP 5.4. Also, the PEAR channel will go offline permanently no earlier than 30
+June 2015.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+## Mock Objects
 
-## Security Vulnerabilities
+In unit tests, mock objects simulate the behaviour of real objects. They are
+commonly utilised to offer test isolation, to stand in for objects which do not
+yet exist, or to allow for the exploratory design of class APIs without
+requiring actual implementation up front.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The benefits of a mock object framework are to allow for the flexible generation
+of such mock objects (and stubs). They allow the setting of expected method calls
+and return values using a flexible API which is capable of capturing every
+possible real object behaviour in way that is stated as close as possible to a
+natural language description.
 
-## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
+## Prerequisites
+
+Mockery requires PHP 5.3.2 or greater. In addition, it is recommended to install
+the Hamcrest library (see below for instructions) which contains additional
+matchers used when defining expected method arguments.
+
+
+## Documentation
+
+The current version can be seen at [docs.mockery.io](http://docs.mockery.io).
