@@ -12,10 +12,10 @@
 namespace Symfony\Component\Routing\Exception;
 
 /**
- * ExceptionInterface.
+ * Exception thrown when no routes are configured.
  *
- * @author Alexandre Salomé <alexandre.salome@gmail.com>
+ * @author Yonel Ceruto <yonelceruto@gmail.com>
  */
-interface ExceptionInterface
+class NoConfigurationException extends ResourceNotFoundException
 {
 }

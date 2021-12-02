@@ -1,898 +1,558 @@
 <?php
 
-namespace Illuminate\Routing;
+/*
+ * This file is part of the Symfony package.
+ *
+ * (c) Fabien Potencier <fabien@symfony.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
-use Closure;
-use LogicException;
-use ReflectionFunction;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use Illuminate\Container\Container;
-use Illuminate\Support\Traits\Macroable;
-use Illuminate\Routing\Matching\UriValidator;
-use Illuminate\Routing\Matching\HostValidator;
-use Illuminate\Routing\Matching\MethodValidator;
-use Illuminate\Routing\Matching\SchemeValidator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Routing\Contracts\ControllerDispatcher as ControllerDispatcherContract;
+namespace Symfony\Component\Routing;
 
-class Route
+/**
+ * A Route describes a route and its parameters.
+ *
+ * @author Fabien Potencier <fabien@symfony.com>
+ * @author Tobias Schultze <http://tobion.de>
+ */
+class Route implements \Serializable
 {
-    use Macroable, RouteDependencyResolverTrait;
+    private $path = '/';
+    private $host = '';
+    private $schemes = [];
+    private $methods = [];
+    private $defaults = [];
+    private $requirements = [];
+    private $options = [];
+    private $condition = '';
 
     /**
-     * The URI pattern the route responds to.
-     *
-     * @var string
+     * @var CompiledRoute|null
      */
-    public $uri;
+    private $compiled;
 
     /**
-     * The HTTP methods the route responds to.
+     * Constructor.
      *
-     * @var array
-     */
-    public $methods;
-
-    /**
-     * The route action array.
+     * Available options:
      *
-     * @var array
-     */
-    public $action;
-
-    /**
-     * Indicates whether the route is a fallback route.
+     *  * compiler_class: A class name able to compile this route instance (RouteCompiler by default)
+     *  * utf8:           Whether UTF-8 matching is enforced ot not
      *
-     * @var bool
+     * @param string          $path         The path pattern to match
+     * @param array           $defaults     An array of default parameter values
+     * @param array           $requirements An array of requirements for parameters (regexes)
+     * @param array           $options      An array of options
+     * @param string          $host         The host pattern to match
+     * @param string|string[] $schemes      A required URI scheme or an array of restricted schemes
+     * @param string|string[] $methods      A required HTTP method or an array of restricted methods
+     * @param string          $condition    A condition that should evaluate to true for the route to match
      */
-    public $isFallback = false;
-
-    /**
-     * The controller instance.
-     *
-     * @var mixed
-     */
-    public $controller;
-
-    /**
-     * The default values for the route.
-     *
-     * @var array
-     */
-    public $defaults = [];
-
-    /**
-     * The regular expression requirements.
-     *
-     * @var array
-     */
-    public $wheres = [];
-
-    /**
-     * The array of matched parameters.
-     *
-     * @var array
-     */
-    public $parameters;
-
-    /**
-     * The parameter names for the route.
-     *
-     * @var array|null
-     */
-    public $parameterNames;
-
-    /**
-     * The computed gathered middleware.
-     *
-     * @var array|null
-     */
-    public $computedMiddleware;
-
-    /**
-     * The compiled version of the route.
-     *
-     * @var \Symfony\Component\Routing\CompiledRoute
-     */
-    public $compiled;
-
-    /**
-     * The router instance used by the route.
-     *
-     * @var \Illuminate\Routing\Router
-     */
-    protected $router;
-
-    /**
-     * The container instance used by the route.
-     *
-     * @var \Illuminate\Container\Container
-     */
-    protected $container;
-
-    /**
-     * The validators used by the routes.
-     *
-     * @var array
-     */
-    public static $validators;
-
-    /**
-     * Create a new Route instance.
-     *
-     * @param  array|string  $methods
-     * @param  string  $uri
-     * @param  \Closure|array  $action
-     * @return void
-     */
-    public function __construct($methods, $uri, $action)
+    public function __construct($path, array $defaults = [], array $requirements = [], array $options = [], $host = '', $schemes = [], $methods = [], $condition = '')
     {
-        $this->uri = $uri;
-        $this->methods = (array) $methods;
-        $this->action = $this->parseAction($action);
+        $this->setPath($path);
+        $this->setDefaults($defaults);
+        $this->setRequirements($requirements);
+        $this->setOptions($options);
+        $this->setHost($host);
+        $this->setSchemes($schemes);
+        $this->setMethods($methods);
+        $this->setCondition($condition);
+    }
 
-        if (in_array('GET', $this->methods) && ! in_array('HEAD', $this->methods)) {
-            $this->methods[] = 'HEAD';
+    /**
+     * {@inheritdoc}
+     */
+    public function serialize()
+    {
+        return serialize([
+            'path' => $this->path,
+            'host' => $this->host,
+            'defaults' => $this->defaults,
+            'requirements' => $this->requirements,
+            'options' => $this->options,
+            'schemes' => $this->schemes,
+            'methods' => $this->methods,
+            'condition' => $this->condition,
+            'compiled' => $this->compiled,
+        ]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function unserialize($serialized)
+    {
+        $data = unserialize($serialized);
+        $this->path = $data['path'];
+        $this->host = $data['host'];
+        $this->defaults = $data['defaults'];
+        $this->requirements = $data['requirements'];
+        $this->options = $data['options'];
+        $this->schemes = $data['schemes'];
+        $this->methods = $data['methods'];
+
+        if (isset($data['condition'])) {
+            $this->condition = $data['condition'];
         }
-
-        if (isset($this->action['prefix'])) {
-            $this->prefix($this->action['prefix']);
+        if (isset($data['compiled'])) {
+            $this->compiled = $data['compiled'];
         }
     }
 
     /**
-     * Parse the route action into a standard array.
+     * Returns the pattern for the path.
      *
-     * @param  callable|array|null  $action
-     * @return array
-     *
-     * @throws \UnexpectedValueException
+     * @return string The path pattern
      */
-    protected function parseAction($action)
+    public function getPath()
     {
-        return RouteAction::parse($this->uri, $action);
+        return $this->path;
     }
 
     /**
-     * Run the route action and return the response.
+     * Sets the pattern for the path.
      *
-     * @return mixed
-     */
-    public function run()
-    {
-        $this->container = $this->container ?: new Container;
-
-        try {
-            if ($this->isControllerAction()) {
-                return $this->runController();
-            }
-
-            return $this->runCallable();
-        } catch (HttpResponseException $e) {
-            return $e->getResponse();
-        }
-    }
-
-    /**
-     * Checks whether the route's action is a controller.
+     * This method implements a fluent interface.
      *
-     * @return bool
-     */
-    protected function isControllerAction()
-    {
-        return is_string($this->action['uses']);
-    }
-
-    /**
-     * Run the route action and return the response.
+     * @param string $pattern The path pattern
      *
-     * @return mixed
-     */
-    protected function runCallable()
-    {
-        $callable = $this->action['uses'];
-
-        return $callable(...array_values($this->resolveMethodDependencies(
-            $this->parametersWithoutNulls(), new ReflectionFunction($this->action['uses'])
-        )));
-    }
-
-    /**
-     * Run the route action and return the response.
-     *
-     * @return mixed
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-     */
-    protected function runController()
-    {
-        return $this->controllerDispatcher()->dispatch(
-            $this, $this->getController(), $this->getControllerMethod()
-        );
-    }
-
-    /**
-     * Get the controller instance for the route.
-     *
-     * @return mixed
-     */
-    public function getController()
-    {
-        if (! $this->controller) {
-            $class = $this->parseControllerCallback()[0];
-
-            $this->controller = $this->container->make(ltrim($class, '\\'));
-        }
-
-        return $this->controller;
-    }
-
-    /**
-     * Get the controller method used for the route.
-     *
-     * @return string
-     */
-    protected function getControllerMethod()
-    {
-        return $this->parseControllerCallback()[1];
-    }
-
-    /**
-     * Parse the controller.
-     *
-     * @return array
-     */
-    protected function parseControllerCallback()
-    {
-        return Str::parseCallback($this->action['uses']);
-    }
-
-    /**
-     * Determine if the route matches given request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  bool  $includingMethod
-     * @return bool
-     */
-    public function matches(Request $request, $includingMethod = true)
-    {
-        $this->compileRoute();
-
-        foreach ($this->getValidators() as $validator) {
-            if (! $includingMethod && $validator instanceof MethodValidator) {
-                continue;
-            }
-
-            if (! $validator->matches($this, $request)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Compile the route into a Symfony CompiledRoute instance.
-     *
-     * @return \Symfony\Component\Routing\CompiledRoute
-     */
-    protected function compileRoute()
-    {
-        if (! $this->compiled) {
-            $this->compiled = (new RouteCompiler($this))->compile();
-        }
-
-        return $this->compiled;
-    }
-
-    /**
-     * Bind the route to a given request for execution.
-     *
-     * @param  \Illuminate\Http\Request  $request
      * @return $this
      */
-    public function bind(Request $request)
+    public function setPath($pattern)
     {
-        $this->compileRoute();
-
-        $this->parameters = (new RouteParameterBinder($this))
-                        ->parameters($request);
+        // A pattern must start with a slash and must not have multiple slashes at the beginning because the
+        // generated path for this route would be confused with a network path, e.g. '//domain.com/path'.
+        $this->path = '/'.ltrim(trim($pattern), '/');
+        $this->compiled = null;
 
         return $this;
     }
 
     /**
-     * Determine if the route has parameters.
+     * Returns the pattern for the host.
      *
-     * @return bool
+     * @return string The host pattern
      */
-    public function hasParameters()
+    public function getHost()
     {
-        return isset($this->parameters);
+        return $this->host;
     }
 
     /**
-     * Determine a given parameter exists from the route.
+     * Sets the pattern for the host.
      *
-     * @param  string $name
-     * @return bool
-     */
-    public function hasParameter($name)
-    {
-        if ($this->hasParameters()) {
-            return array_key_exists($name, $this->parameters());
-        }
-
-        return false;
-    }
-
-    /**
-     * Get a given parameter from the route.
+     * This method implements a fluent interface.
      *
-     * @param  string  $name
-     * @param  mixed   $default
-     * @return string|object
-     */
-    public function parameter($name, $default = null)
-    {
-        return Arr::get($this->parameters(), $name, $default);
-    }
-
-    /**
-     * Set a parameter to the given value.
+     * @param string $pattern The host pattern
      *
-     * @param  string  $name
-     * @param  mixed   $value
-     * @return void
-     */
-    public function setParameter($name, $value)
-    {
-        $this->parameters();
-
-        $this->parameters[$name] = $value;
-    }
-
-    /**
-     * Unset a parameter on the route if it is set.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function forgetParameter($name)
-    {
-        $this->parameters();
-
-        unset($this->parameters[$name]);
-    }
-
-    /**
-     * Get the key / value list of parameters for the route.
-     *
-     * @return array
-     *
-     * @throws \LogicException
-     */
-    public function parameters()
-    {
-        if (isset($this->parameters)) {
-            return $this->parameters;
-        }
-
-        throw new LogicException('Route is not bound.');
-    }
-
-    /**
-     * Get the key / value list of parameters without null values.
-     *
-     * @return array
-     */
-    public function parametersWithoutNulls()
-    {
-        return array_filter($this->parameters(), function ($p) {
-            return ! is_null($p);
-        });
-    }
-
-    /**
-     * Get all of the parameter names for the route.
-     *
-     * @return array
-     */
-    public function parameterNames()
-    {
-        if (isset($this->parameterNames)) {
-            return $this->parameterNames;
-        }
-
-        return $this->parameterNames = $this->compileParameterNames();
-    }
-
-    /**
-     * Get the parameter names for the route.
-     *
-     * @return array
-     */
-    protected function compileParameterNames()
-    {
-        preg_match_all('/\{(.*?)\}/', $this->getDomain().$this->uri, $matches);
-
-        return array_map(function ($m) {
-            return trim($m, '?');
-        }, $matches[1]);
-    }
-
-    /**
-     * Get the parameters that are listed in the route / controller signature.
-     *
-     * @param  string|null  $subClass
-     * @return array
-     */
-    public function signatureParameters($subClass = null)
-    {
-        return RouteSignatureParameters::fromAction($this->action, $subClass);
-    }
-
-    /**
-     * Set a default value for the route.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
      * @return $this
      */
-    public function defaults($key, $value)
+    public function setHost($pattern)
     {
-        $this->defaults[$key] = $value;
+        $this->host = (string) $pattern;
+        $this->compiled = null;
 
         return $this;
     }
 
     /**
-     * Set a regular expression requirement on the route.
+     * Returns the lowercased schemes this route is restricted to.
+     * So an empty array means that any scheme is allowed.
      *
-     * @param  array|string  $name
-     * @param  string  $expression
+     * @return string[] The schemes
+     */
+    public function getSchemes()
+    {
+        return $this->schemes;
+    }
+
+    /**
+     * Sets the schemes (e.g. 'https') this route is restricted to.
+     * So an empty array means that any scheme is allowed.
+     *
+     * This method implements a fluent interface.
+     *
+     * @param string|string[] $schemes The scheme or an array of schemes
+     *
      * @return $this
      */
-    public function where($name, $expression = null)
+    public function setSchemes($schemes)
     {
-        foreach ($this->parseWhere($name, $expression) as $name => $expression) {
-            $this->wheres[$name] = $expression;
-        }
+        $this->schemes = array_map('strtolower', (array) $schemes);
+        $this->compiled = null;
 
         return $this;
     }
 
     /**
-     * Parse arguments to the where method into an array.
+     * Checks if a scheme requirement has been set.
      *
-     * @param  array|string  $name
-     * @param  string  $expression
-     * @return array
+     * @param string $scheme
+     *
+     * @return bool true if the scheme requirement exists, otherwise false
      */
-    protected function parseWhere($name, $expression)
+    public function hasScheme($scheme)
     {
-        return is_array($name) ? $name : [$name => $expression];
+        return \in_array(strtolower($scheme), $this->schemes, true);
     }
 
     /**
-     * Set a list of regular expression requirements on the route.
+     * Returns the uppercased HTTP methods this route is restricted to.
+     * So an empty array means that any method is allowed.
      *
-     * @param  array  $wheres
-     * @return $this
+     * @return string[] The methods
      */
-    protected function whereArray(array $wheres)
-    {
-        foreach ($wheres as $name => $expression) {
-            $this->where($name, $expression);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Mark this route as a fallback route.
-     *
-     * @return $this
-     */
-    public function fallback()
-    {
-        $this->isFallback = true;
-
-        return $this;
-    }
-
-    /**
-     * Get the HTTP verbs the route responds to.
-     *
-     * @return array
-     */
-    public function methods()
+    public function getMethods()
     {
         return $this->methods;
     }
 
     /**
-     * Determine if the route only responds to HTTP requests.
+     * Sets the HTTP methods (e.g. 'POST') this route is restricted to.
+     * So an empty array means that any method is allowed.
      *
-     * @return bool
-     */
-    public function httpOnly()
-    {
-        return in_array('http', $this->action, true);
-    }
-
-    /**
-     * Determine if the route only responds to HTTPS requests.
+     * This method implements a fluent interface.
      *
-     * @return bool
-     */
-    public function httpsOnly()
-    {
-        return $this->secure();
-    }
-
-    /**
-     * Determine if the route only responds to HTTPS requests.
+     * @param string|string[] $methods The method or an array of methods
      *
-     * @return bool
-     */
-    public function secure()
-    {
-        return in_array('https', $this->action, true);
-    }
-
-    /**
-     * Get or set the domain for the route.
-     *
-     * @param  string|null  $domain
-     * @return $this|string|null
-     */
-    public function domain($domain = null)
-    {
-        if (is_null($domain)) {
-            return $this->getDomain();
-        }
-
-        $this->action['domain'] = $domain;
-
-        return $this;
-    }
-
-    /**
-     * Get the domain defined for the route.
-     *
-     * @return string|null
-     */
-    public function getDomain()
-    {
-        return isset($this->action['domain'])
-                ? str_replace(['http://', 'https://'], '', $this->action['domain']) : null;
-    }
-
-    /**
-     * Get the prefix of the route instance.
-     *
-     * @return string
-     */
-    public function getPrefix()
-    {
-        return $this->action['prefix'] ?? null;
-    }
-
-    /**
-     * Add a prefix to the route URI.
-     *
-     * @param  string  $prefix
      * @return $this
      */
-    public function prefix($prefix)
+    public function setMethods($methods)
     {
-        $uri = rtrim($prefix, '/').'/'.ltrim($this->uri, '/');
-
-        $this->uri = trim($uri, '/');
+        $this->methods = array_map('strtoupper', (array) $methods);
+        $this->compiled = null;
 
         return $this;
     }
 
     /**
-     * Get the URI associated with the route.
+     * Returns the options.
      *
-     * @return string
+     * @return array The options
      */
-    public function uri()
+    public function getOptions()
     {
-        return $this->uri;
+        return $this->options;
     }
 
     /**
-     * Set the URI that the route responds to.
+     * Sets the options.
      *
-     * @param  string  $uri
+     * This method implements a fluent interface.
+     *
+     * @param array $options The options
+     *
      * @return $this
      */
-    public function setUri($uri)
+    public function setOptions(array $options)
     {
-        $this->uri = $uri;
-
-        return $this;
-    }
-
-    /**
-     * Get the name of the route instance.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->action['as'] ?? null;
-    }
-
-    /**
-     * Add or change the route name.
-     *
-     * @param  string  $name
-     * @return $this
-     */
-    public function name($name)
-    {
-        $this->action['as'] = isset($this->action['as']) ? $this->action['as'].$name : $name;
-
-        return $this;
-    }
-
-    /**
-     * Determine whether the route's name matches the given patterns.
-     *
-     * @param  dynamic  $patterns
-     * @return bool
-     */
-    public function named(...$patterns)
-    {
-        if (is_null($routeName = $this->getName())) {
-            return false;
-        }
-
-        foreach ($patterns as $pattern) {
-            if (Str::is($pattern, $routeName)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Set the handler for the route.
-     *
-     * @param  \Closure|string  $action
-     * @return $this
-     */
-    public function uses($action)
-    {
-        $action = is_string($action) ? $this->addGroupNamespaceToStringUses($action) : $action;
-
-        return $this->setAction(array_merge($this->action, $this->parseAction([
-            'uses' => $action,
-            'controller' => $action,
-        ])));
-    }
-
-    /**
-     * Parse a string based action for the "uses" fluent method.
-     *
-     * @param  string  $action
-     * @return string
-     */
-    protected function addGroupNamespaceToStringUses($action)
-    {
-        $groupStack = last($this->router->getGroupStack());
-
-        if (isset($groupStack['namespace']) && strpos($action, '\\') !== 0) {
-            return $groupStack['namespace'].'\\'.$action;
-        }
-
-        return $action;
-    }
-
-    /**
-     * Get the action name for the route.
-     *
-     * @return string
-     */
-    public function getActionName()
-    {
-        return $this->action['controller'] ?? 'Closure';
-    }
-
-    /**
-     * Get the method name of the route action.
-     *
-     * @return string
-     */
-    public function getActionMethod()
-    {
-        return Arr::last(explode('@', $this->getActionName()));
-    }
-
-    /**
-     * Get the action array or one of its properties for the route.
-     *
-     * @param  string|null  $key
-     * @return mixed
-     */
-    public function getAction($key = null)
-    {
-        return Arr::get($this->action, $key);
-    }
-
-    /**
-     * Set the action array for the route.
-     *
-     * @param  array  $action
-     * @return $this
-     */
-    public function setAction(array $action)
-    {
-        $this->action = $action;
-
-        return $this;
-    }
-
-    /**
-     * Get all middleware, including the ones from the controller.
-     *
-     * @return array
-     */
-    public function gatherMiddleware()
-    {
-        if (! is_null($this->computedMiddleware)) {
-            return $this->computedMiddleware;
-        }
-
-        $this->computedMiddleware = [];
-
-        return $this->computedMiddleware = array_unique(array_merge(
-            $this->middleware(), $this->controllerMiddleware()
-        ), SORT_REGULAR);
-    }
-
-    /**
-     * Get or set the middlewares attached to the route.
-     *
-     * @param  array|string|null $middleware
-     * @return $this|array
-     */
-    public function middleware($middleware = null)
-    {
-        if (is_null($middleware)) {
-            return (array) ($this->action['middleware'] ?? []);
-        }
-
-        if (is_string($middleware)) {
-            $middleware = func_get_args();
-        }
-
-        $this->action['middleware'] = array_merge(
-            (array) ($this->action['middleware'] ?? []), $middleware
-        );
-
-        return $this;
-    }
-
-    /**
-     * Get the middleware for the route's controller.
-     *
-     * @return array
-     */
-    public function controllerMiddleware()
-    {
-        if (! $this->isControllerAction()) {
-            return [];
-        }
-
-        return $this->controllerDispatcher()->getMiddleware(
-            $this->getController(), $this->getControllerMethod()
-        );
-    }
-
-    /**
-     * Get the dispatcher for the route's controller.
-     *
-     * @return \Illuminate\Routing\Contracts\ControllerDispatcher
-     */
-    public function controllerDispatcher()
-    {
-        if ($this->container->bound(ControllerDispatcherContract::class)) {
-            return $this->container->make(ControllerDispatcherContract::class);
-        }
-
-        return new ControllerDispatcher($this->container);
-    }
-
-    /**
-     * Get the route validators for the instance.
-     *
-     * @return array
-     */
-    public static function getValidators()
-    {
-        if (isset(static::$validators)) {
-            return static::$validators;
-        }
-
-        // To match the route, we will use a chain of responsibility pattern with the
-        // validator implementations. We will spin through each one making sure it
-        // passes and then we will know if the route as a whole matches request.
-        return static::$validators = [
-            new UriValidator, new MethodValidator,
-            new SchemeValidator, new HostValidator,
+        $this->options = [
+            'compiler_class' => 'Symfony\\Component\\Routing\\RouteCompiler',
         ];
+
+        return $this->addOptions($options);
     }
 
     /**
-     * Get the compiled version of the route.
+     * Adds options.
      *
-     * @return \Symfony\Component\Routing\CompiledRoute
-     */
-    public function getCompiled()
-    {
-        return $this->compiled;
-    }
-
-    /**
-     * Set the router instance on the route.
+     * This method implements a fluent interface.
      *
-     * @param  \Illuminate\Routing\Router  $router
+     * @param array $options The options
+     *
      * @return $this
      */
-    public function setRouter(Router $router)
+    public function addOptions(array $options)
     {
-        $this->router = $router;
+        foreach ($options as $name => $option) {
+            $this->options[$name] = $option;
+        }
+        $this->compiled = null;
 
         return $this;
     }
 
     /**
-     * Set the container instance on the route.
+     * Sets an option value.
      *
-     * @param  \Illuminate\Container\Container  $container
+     * This method implements a fluent interface.
+     *
+     * @param string $name  An option name
+     * @param mixed  $value The option value
+     *
      * @return $this
      */
-    public function setContainer(Container $container)
+    public function setOption($name, $value)
     {
-        $this->container = $container;
+        $this->options[$name] = $value;
+        $this->compiled = null;
 
         return $this;
     }
 
     /**
-     * Prepare the route instance for serialization.
+     * Get an option value.
      *
-     * @return void
+     * @param string $name An option name
      *
-     * @throws \LogicException
+     * @return mixed The option value or null when not given
      */
-    public function prepareForSerialization()
+    public function getOption($name)
     {
-        if ($this->action['uses'] instanceof Closure) {
-            throw new LogicException("Unable to prepare route [{$this->uri}] for serialization. Uses Closure.");
+        return isset($this->options[$name]) ? $this->options[$name] : null;
+    }
+
+    /**
+     * Checks if an option has been set.
+     *
+     * @param string $name An option name
+     *
+     * @return bool true if the option is set, false otherwise
+     */
+    public function hasOption($name)
+    {
+        return \array_key_exists($name, $this->options);
+    }
+
+    /**
+     * Returns the defaults.
+     *
+     * @return array The defaults
+     */
+    public function getDefaults()
+    {
+        return $this->defaults;
+    }
+
+    /**
+     * Sets the defaults.
+     *
+     * This method implements a fluent interface.
+     *
+     * @param array $defaults The defaults
+     *
+     * @return $this
+     */
+    public function setDefaults(array $defaults)
+    {
+        $this->defaults = [];
+
+        return $this->addDefaults($defaults);
+    }
+
+    /**
+     * Adds defaults.
+     *
+     * This method implements a fluent interface.
+     *
+     * @param array $defaults The defaults
+     *
+     * @return $this
+     */
+    public function addDefaults(array $defaults)
+    {
+        foreach ($defaults as $name => $default) {
+            $this->defaults[$name] = $default;
+        }
+        $this->compiled = null;
+
+        return $this;
+    }
+
+    /**
+     * Gets a default value.
+     *
+     * @param string $name A variable name
+     *
+     * @return mixed The default value or null when not given
+     */
+    public function getDefault($name)
+    {
+        return isset($this->defaults[$name]) ? $this->defaults[$name] : null;
+    }
+
+    /**
+     * Checks if a default value is set for the given variable.
+     *
+     * @param string $name A variable name
+     *
+     * @return bool true if the default value is set, false otherwise
+     */
+    public function hasDefault($name)
+    {
+        return \array_key_exists($name, $this->defaults);
+    }
+
+    /**
+     * Sets a default value.
+     *
+     * @param string $name    A variable name
+     * @param mixed  $default The default value
+     *
+     * @return $this
+     */
+    public function setDefault($name, $default)
+    {
+        $this->defaults[$name] = $default;
+        $this->compiled = null;
+
+        return $this;
+    }
+
+    /**
+     * Returns the requirements.
+     *
+     * @return array The requirements
+     */
+    public function getRequirements()
+    {
+        return $this->requirements;
+    }
+
+    /**
+     * Sets the requirements.
+     *
+     * This method implements a fluent interface.
+     *
+     * @param array $requirements The requirements
+     *
+     * @return $this
+     */
+    public function setRequirements(array $requirements)
+    {
+        $this->requirements = [];
+
+        return $this->addRequirements($requirements);
+    }
+
+    /**
+     * Adds requirements.
+     *
+     * This method implements a fluent interface.
+     *
+     * @param array $requirements The requirements
+     *
+     * @return $this
+     */
+    public function addRequirements(array $requirements)
+    {
+        foreach ($requirements as $key => $regex) {
+            $this->requirements[$key] = $this->sanitizeRequirement($key, $regex);
+        }
+        $this->compiled = null;
+
+        return $this;
+    }
+
+    /**
+     * Returns the requirement for the given key.
+     *
+     * @param string $key The key
+     *
+     * @return string|null The regex or null when not given
+     */
+    public function getRequirement($key)
+    {
+        return isset($this->requirements[$key]) ? $this->requirements[$key] : null;
+    }
+
+    /**
+     * Checks if a requirement is set for the given key.
+     *
+     * @param string $key A variable name
+     *
+     * @return bool true if a requirement is specified, false otherwise
+     */
+    public function hasRequirement($key)
+    {
+        return \array_key_exists($key, $this->requirements);
+    }
+
+    /**
+     * Sets a requirement for the given key.
+     *
+     * @param string $key   The key
+     * @param string $regex The regex
+     *
+     * @return $this
+     */
+    public function setRequirement($key, $regex)
+    {
+        $this->requirements[$key] = $this->sanitizeRequirement($key, $regex);
+        $this->compiled = null;
+
+        return $this;
+    }
+
+    /**
+     * Returns the condition.
+     *
+     * @return string The condition
+     */
+    public function getCondition()
+    {
+        return $this->condition;
+    }
+
+    /**
+     * Sets the condition.
+     *
+     * This method implements a fluent interface.
+     *
+     * @param string $condition The condition
+     *
+     * @return $this
+     */
+    public function setCondition($condition)
+    {
+        $this->condition = (string) $condition;
+        $this->compiled = null;
+
+        return $this;
+    }
+
+    /**
+     * Compiles the route.
+     *
+     * @return CompiledRoute A CompiledRoute instance
+     *
+     * @throws \LogicException If the Route cannot be compiled because the
+     *                         path or host pattern is invalid
+     *
+     * @see RouteCompiler which is responsible for the compilation process
+     */
+    public function compile()
+    {
+        if (null !== $this->compiled) {
+            return $this->compiled;
         }
 
-        $this->compileRoute();
+        $class = $this->getOption('compiler_class');
 
-        unset($this->router, $this->container);
+        return $this->compiled = $class::compile($this);
     }
 
-    /**
-     * Dynamically access route parameters.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __get($key)
+    private function sanitizeRequirement($key, $regex)
     {
-        return $this->parameter($key);
+        if (!\is_string($regex)) {
+            throw new \InvalidArgumentException(sprintf('Routing requirement for "%s" must be a string.', $key));
+        }
+
+        if ('' !== $regex && '^' === $regex[0]) {
+            $regex = (string) substr($regex, 1); // returns false for a single character
+        }
+
+        if ('$' === substr($regex, -1)) {
+            $regex = substr($regex, 0, -1);
+        }
+
+        if ('' === $regex) {
+            throw new \InvalidArgumentException(sprintf('Routing requirement for "%s" cannot be empty.', $key));
+        }
+
+        return $regex;
     }
 }

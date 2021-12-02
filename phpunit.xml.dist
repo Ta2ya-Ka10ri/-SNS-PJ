@@ -13,7 +13,7 @@
     </php>
 
     <testsuites>
-        <testsuite name="Symfony HttpKernel Component Test Suite">
+        <testsuite name="Symfony Routing Component Test Suite">
             <directory>./Tests/</directory>
         </testsuite>
     </testsuites>
@@ -27,14 +27,4 @@
             </exclude>
         </whitelist>
     </filter>
-
-    <listeners>
-        <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener">
-            <arguments>
-                <array>
-                    <element key="time-sensitive"><string>Symfony\Component\HttpFoundation</string></element>
-                </array>
-            </arguments>
-        </listener>
-    </listeners>
 </phpunit>
