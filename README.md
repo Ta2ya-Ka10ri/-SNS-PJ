@@ -1,51 +1,45 @@
-This is the PHP port of Hamcrest Matchers
-=========================================
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://laravel.com/assets/img/components/logo-laravel.svg"></a></p>
 
-[![Scrutinizer Quality Score](https://scrutinizer-ci.com/g/hamcrest/hamcrest-php/badges/quality-score.png?s=754f5c0556419fc6204917ca9a9dcf2fa2b45ed0)](https://scrutinizer-ci.com/g/hamcrest/hamcrest-php/)
-[![Build Status](https://travis-ci.org/hamcrest/hamcrest-php.png?branch=master)](https://travis-ci.org/hamcrest/hamcrest-php)
-[![Coverage Status](https://coveralls.io/repos/hamcrest/hamcrest-php/badge.png)](https://coveralls.io/r/hamcrest/hamcrest-php)
+<p align="center">
+<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
+</p>
 
-Hamcrest is a matching library originally written for Java, but
-subsequently ported to many other languages.  hamcrest-php is the
-official PHP port of Hamcrest and essentially follows a literal
-translation of the original Java API for Hamcrest, with a few
-Exceptions, mostly down to PHP language barriers:
+## About Laravel
 
-  1. `instanceOf($theClass)` is actually `anInstanceOf($theClass)`
+> **Note:** This repository contains the core code of the Laravel framework. If you want to build an application using Laravel 5, visit the main [Laravel repository](https://github.com/laravel/laravel).
 
-  2. `both(containsString('a'))->and(containsString('b'))`
-     is actually `both(containsString('a'))->andAlso(containsString('b'))`
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable, creative experience to be truly fulfilling. Laravel attempts to take the pain out of development by easing common tasks used in the majority of web projects, such as:
 
-  3. `either(containsString('a'))->or(containsString('b'))`
-     is actually `either(containsString('a'))->orElse(containsString('b'))`
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-  4. Unless it would be non-semantic for a matcher to do so, hamcrest-php
-     allows dynamic typing for it's input, in "the PHP way". Exception are
-     where semantics surrounding the type itself would suggest otherwise,
-     such as stringContains() and greaterThan().
+Laravel is accessible, yet powerful, providing tools needed for large, robust applications. A superb combination of simplicity, elegance, and innovation gives you a complete toolset required to build any application with which you are tasked
 
-  5. Several official matchers have not been ported because they don't
-     make sense or don't apply in PHP:
+## Learning Laravel
 
-       - `typeCompatibleWith($theClass)`
-       - `eventFrom($source)`
-       - `hasProperty($name)` **
-       - `samePropertyValuesAs($obj)` **
+Laravel has the most extensive and thorough documentation and video tutorial library of any modern web application framework. The [Laravel documentation](https://laravel.com/docs) is in-depth and complete, making it a breeze to get started learning the framework.
 
-  6. When most of the collections matchers are finally ported, PHP-specific
-     aliases will probably be created due to a difference in naming
-     conventions between Java's Arrays, Collections, Sets and Maps compared
-     with PHP's Arrays.
+If you're not in the mood to read, [Laracasts](https://laracasts.com) contains over 1100 video tutorials covering a range of topics including Laravel, modern PHP, unit testing, JavaScript, and more. Boost the skill level of yourself and your entire team by digging into our comprehensive video library.
 
-Usage
------
+## Contributing
 
-Hamcrest matchers are easy to use as:
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](http://laravel.com/docs/contributions).
 
-```php
-Hamcrest_MatcherAssert::assertThat('a', Hamcrest_Matchers::equalToIgnoringCase('A'));
-```
+## Code of Conduct
 
-  ** [Unless we consider POPO's (Plain Old PHP Objects) akin to JavaBeans]
-     - The POPO thing is a joke.  Java devs coin the term POJO's (Plain Old
-       Java Objects).
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security Vulnerabilities
+
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+
+## License
+
+The Laravel framework is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
