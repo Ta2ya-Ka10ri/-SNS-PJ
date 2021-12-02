@@ -1,162 +1,109 @@
 <?php
 /*
- * This file is part of PharIo\Version.
+ * This file is part of the Version package.
  *
- * (c) Arne Blankerts <arne@blankerts.de>, Sebastian Heuer <sebastian@phpeople.de>, Sebastian Bergmann <sebastian@phpunit.de>
+ * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace PharIo\Version;
+namespace SebastianBergmann;
 
-class Version {
+/**
+ * @since Class available since Release 1.0.0
+ */
+class Version
+{
     /**
-     * @var VersionNumber
+     * @var string
      */
-    private $major;
-
-    /**
-     * @var VersionNumber
-     */
-    private $minor;
-
-    /**
-     * @var VersionNumber
-     */
-    private $patch;
-
-    /**
-     * @var PreReleaseSuffix
-     */
-    private $preReleaseSuffix;
+    private $path;
 
     /**
      * @var string
      */
-    private $versionString = '';
+    private $release;
 
     /**
-     * @param string $versionString
+     * @var string
      */
-    public function __construct($versionString) {
-        $this->ensureVersionStringIsValid($versionString);
-
-        $this->versionString = $versionString;
-    }
+    private $version;
 
     /**
-     * @param array $matches
+     * @param string $release
+     * @param string $path
      */
-    private function parseVersion(array $matches) {
-        $this->major = new VersionNumber($matches['Major']);
-        $this->minor = new VersionNumber($matches['Minor']);
-        $this->patch = isset($matches['Patch']) ? new VersionNumber($matches['Patch']) : new VersionNumber(null);
-
-        if (isset($matches['ReleaseType'])) {
-            $preReleaseNumber = isset($matches['ReleaseTypeCount']) ? (int) $matches['ReleaseTypeCount'] : null;
-
-            $this->preReleaseSuffix = new PreReleaseSuffix($matches['ReleaseType'], $preReleaseNumber);
-        }
-    }
-
-    /**
-     * @return PreReleaseSuffix
-     */
-    public function getPreReleaseSuffix()
+    public function __construct($release, $path)
     {
-        return $this->preReleaseSuffix;
+        $this->release = $release;
+        $this->path    = $path;
     }
 
     /**
      * @return string
      */
-    public function getVersionString() {
-        return $this->versionString;
+    public function getVersion()
+    {
+        if ($this->version === null) {
+            if (count(explode('.', $this->release)) == 3) {
+                $this->version = $this->release;
+            } else {
+                $this->version = $this->release . '-dev';
+            }
+
+            $git = $this->getGitInformation($this->path);
+
+            if ($git) {
+                if (count(explode('.', $this->release)) == 3) {
+                    $this->version = $git;
+                } else {
+                    $git = explode('-', $git);
+
+                    $this->version = $this->release . '-' . end($git);
+                }
+            }
+        }
+
+        return $this->version;
     }
 
     /**
-     * @param Version $version
+     * @param string $path
      *
-     * @return bool
+     * @return bool|string
      */
-    public function isGreaterThan(Version $version) {
-        if ($version->getMajor()->getValue() > $this->getMajor()->getValue()) {
+    private function getGitInformation($path)
+    {
+        if (!is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
             return false;
         }
 
-        if ($version->getMajor()->getValue() < $this->getMajor()->getValue()) {
-            return true;
-        }
+        $process = proc_open(
+            'git describe --tags',
+            [
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ],
+            $pipes,
+            $path
+        );
 
-        if ($version->getMinor()->getValue() > $this->getMinor()->getValue()) {
+        if (!is_resource($process)) {
             return false;
         }
 
-        if ($version->getMinor()->getValue() < $this->getMinor()->getValue()) {
-            return true;
-        }
+        $result = trim(stream_get_contents($pipes[1]));
 
-        if ($version->getPatch()->getValue() >= $this->getPatch()->getValue()) {
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        $returnCode = proc_close($process);
+
+        if ($returnCode !== 0) {
             return false;
         }
 
-        if ($version->getPatch()->getValue() < $this->getPatch()->getValue()) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return VersionNumber
-     */
-    public function getMajor() {
-        return $this->major;
-    }
-
-    /**
-     * @return VersionNumber
-     */
-    public function getMinor() {
-        return $this->minor;
-    }
-
-    /**
-     * @return VersionNumber
-     */
-    public function getPatch() {
-        return $this->patch;
-    }
-
-    /**
-     * @param string $version
-     *
-     * @throws InvalidVersionException
-     */
-    private function ensureVersionStringIsValid($version) {
-        $regex = '/^v?
-            (?<Major>(0|(?:[1-9][0-9]*)))
-            \\.
-            (?<Minor>(0|(?:[1-9][0-9]*)))
-            (\\.
-                (?<Patch>(0|(?:[1-9][0-9]*)))
-            )?
-            (?:
-                -
-                (?<ReleaseType>(?:(dev|beta|b|RC|alpha|a|patch|p)))
-                (?:
-                    (?<ReleaseTypeCount>[0-9])
-                )?
-            )?       
-        $/x';
-
-        if (preg_match($regex, $version, $matches) !== 1) {
-            throw new InvalidVersionException(
-                sprintf("Version string '%s' does not follow SemVer semantics", $version)
-            );
-        }
-
-        $this->parseVersion($matches);
+        return $result;
     }
 }
