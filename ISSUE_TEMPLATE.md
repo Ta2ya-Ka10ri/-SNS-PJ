@@ -1,15 +1,19 @@
-| Q                            | A
-| -----------------------------| ---------------
-| phpunit-mock-objects version | x.y.z
-| PHPUnit version              | x.y.z
-| PHP version                  | x.y.z
-| Installation Method          | Composer / PHAR
+<!-- Please fill in this template according to your issue. -->
 
-<!--
-- Please fill in this template according to your issue.
-- Please keep the table shown above at the top of your issue.
-- Please post code as text (using proper markup). Do not post screenshots of code.
-- For support request or how-tos, visit https://phpunit.de/support.html
-- Otherwise, replace this comment by the description of your issue.
--->
+| Q                   | A
+| ------------------- | -----
+| Bug report?         | yes/no
+| Feature request?    | yes/no
+| RFC?                | yes/no
+| How used?           | Standalone/Symfony/3party
+| Swiftmailer version | x.y.z
+| PHP version         | x.y.z
 
+### Observed behaviour
+<!-- What does the code do? -->
+
+### Expected behaviour
+<!-- What should the code do? -->
+
+### Example
+<!-- Example to reproduce the issue. -->
