@@ -1,54 +1,43 @@
 {
-    "name": "psy/psysh",
-    "description": "An interactive shell for modern PHP.",
+    "name": "swiftmailer/swiftmailer",
     "type": "library",
-    "keywords": ["console", "interactive", "shell", "repl"],
-    "homepage": "http://psysh.org",
+    "description": "Swiftmailer, free feature-rich PHP mailer",
+    "keywords": ["mail","mailer","email"],
+    "homepage": "https://swiftmailer.symfony.com",
     "license": "MIT",
     "authors": [
         {
-            "name": "Justin Hileman",
-            "email": "justin@justinhileman.info",
-            "homepage": "http://justinhileman.com"
+            "name": "Chris Corbyn"
+        },
+        {
+            "name": "Fabien Potencier",
+            "email": "fabien@symfony.com"
         }
     ],
     "require": {
-        "php": ">=5.4.0",
-        "ext-json": "*",
-        "ext-tokenizer": "*",
-        "symfony/console": "~2.3.10|^2.4.2|~3.0|~4.0|~5.0",
-        "symfony/var-dumper": "~2.7|~3.0|~4.0|~5.0",
-        "nikic/php-parser": "~1.3|~2.0|~3.0|~4.0",
-        "dnoegel/php-xdg-base-dir": "0.1.*",
-        "jakub-onderka/php-console-highlighter": "0.3.*|0.4.*"
+        "php": ">=7.0.0",
+        "egulias/email-validator": "~2.0",
+        "symfony/polyfill-iconv": "^1.0",
+        "symfony/polyfill-mbstring": "^1.0",
+        "symfony/polyfill-intl-idn": "^1.10"
     },
     "require-dev": {
-        "phpunit/phpunit": "~4.8.35|~5.0|~6.0|~7.0",
-        "hoa/console": "~2.15|~3.16",
-        "bamarni/composer-bin-plugin": "^1.2"
+        "mockery/mockery": "~0.9.1",
+        "symfony/phpunit-bridge": "^3.4.19|^4.1.8"
     },
     "suggest": {
-        "ext-pcntl": "Enabling the PCNTL extension makes PsySH a lot happier :)",
-        "ext-posix": "If you have PCNTL, you'll want the POSIX extension as well.",
-        "ext-readline": "Enables support for arrow-key history navigation, and showing and manipulating command history.",
-        "ext-pdo-sqlite": "The doc command requires SQLite to work.",
-        "hoa/console": "A pure PHP readline implementation. You'll want this if your PHP install doesn't already support readline or libedit."
+        "ext-intl": "Needed to support internationalized email addresses",
+        "true/punycode": "Needed to support internationalized email addresses, if ext-intl is not installed"
     },
     "autoload": {
-        "files": ["src/functions.php"],
-        "psr-4": {
-            "Psy\\": "src/"
-        }
+        "files": ["lib/swift_required.php"]
     },
     "autoload-dev": {
-        "psr-4": {
-            "Psy\\Test\\": "test/"
-        }
+        "psr-0": { "Swift_": "tests/unit" }
     },
-    "bin": ["bin/psysh"],
     "extra": {
         "branch-alias": {
-            "dev-develop": "0.9.x-dev"
+            "dev-master": "6.2-dev"
         }
     }
 }
