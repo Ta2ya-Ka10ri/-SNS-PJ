@@ -1,12 +1,40 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Travis Status](https://img.shields.io/travis/phpDocumentor/ReflectionCommon.svg?label=Linux)](https://travis-ci.org/phpDocumentor/ReflectionCommon)
-[![Appveyor Status](https://img.shields.io/appveyor/ci/phpDocumentor/ReflectionCommon.svg?label=Windows)](https://ci.appveyor.com/project/phpDocumentor/ReflectionCommon/branch/master)
-[![Coveralls Coverage](https://img.shields.io/coveralls/github/phpDocumentor/ReflectionCommon.svg)](https://coveralls.io/github/phpDocumentor/ReflectionCommon?branch=master)
-[![Scrutinizer Code Coverage](https://img.shields.io/scrutinizer/coverage/g/phpDocumentor/ReflectionCommon.svg)](https://scrutinizer-ci.com/g/phpDocumentor/ReflectionCommon/?branch=master)
-[![Scrutinizer Code Quality](https://img.shields.io/scrutinizer/g/phpDocumentor/ReflectionCommon.svg)](https://scrutinizer-ci.com/g/phpDocumentor/ReflectionCommon/?branch=master)
-[![Stable Version](https://img.shields.io/packagist/v/phpDocumentor/Reflection-Common.svg)](https://packagist.org/packages/phpDocumentor/Reflection-Common)
-[![Unstable Version](https://img.shields.io/packagist/vpre/phpDocumentor/Reflection-Common.svg)](https://packagist.org/packages/phpDocumentor/Reflection-Common)
+[![Latest Stable Version](https://poser.pugx.org/phpunit/php-code-coverage/v/stable.png)](https://packagist.org/packages/phpunit/php-code-coverage)
+[![Build Status](https://travis-ci.org/sebastianbergmann/php-code-coverage.svg?branch=5.3)](https://travis-ci.org/sebastianbergmann/php-code-coverage)
 
+# SebastianBergmann\CodeCoverage
 
-ReflectionCommon
-================
+**SebastianBergmann\CodeCoverage** is a library that provides collection, processing, and rendering functionality for PHP code coverage information.
+
+## Installation
+
+You can add this library as a local, per-project dependency to your project using [Composer](https://getcomposer.org/):
+
+    composer require phpunit/php-code-coverage
+
+If you only need this library during development, for instance to run your project's test suite, then you should add it as a development-time dependency:
+
+    composer require --dev phpunit/php-code-coverage
+
+## Using the SebastianBergmann\CodeCoverage API
+
+```php
+<?php
+use SebastianBergmann\CodeCoverage\CodeCoverage;
+
+$coverage = new CodeCoverage;
+
+$coverage->filter()->addDirectoryToWhitelist('/path/to/src');
+
+$coverage->start('<name of test>');
+
+// ...
+
+$coverage->stop();
+
+$writer = new \SebastianBergmann\CodeCoverage\Report\Clover;
+$writer->process($coverage, '/tmp/clover.xml');
+
+$writer = new \SebastianBergmann\CodeCoverage\Report\Html\Facade;
+$writer->process($coverage, '/tmp/code-coverage-report');
+```
+
