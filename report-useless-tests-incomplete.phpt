@@ -1,9 +1,10 @@
 --TEST--
-PHPT runner supports XFAIL section
+phpunit IncompleteTest ../../_files/IncompleteTest.php
 --FILE--
 <?php
 $_SERVER['argv'][1] = '--no-configuration';
-$_SERVER['argv'][2] = __DIR__ . '/../_files/phpt-xfail.phpt';
+$_SERVER['argv'][2] = 'IncompleteTest';
+$_SERVER['argv'][3] = __DIR__ . '/../_files/IncompleteTest.php';
 
 require __DIR__ . '/../bootstrap.php';
 PHPUnit\TextUI\Command::main();
@@ -15,4 +16,4 @@ I                                                                   1 / 1 (100%)
 Time: %s, Memory: %s
 
 OK, but incomplete, skipped, or risky tests!
-Tests: 1, Assertions: 1, Incomplete: 1.
+Tests: 1, Assertions: 0, Incomplete: 1.
