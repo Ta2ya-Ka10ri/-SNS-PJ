@@ -1,7 +1,7 @@
 {
-    "name": "symfony/console",
+    "name": "symfony/http-foundation",
     "type": "library",
-    "description": "Symfony Console Component",
+    "description": "Symfony HttpFoundation Component",
     "keywords": [],
     "homepage": "https://symfony.com",
     "license": "MIT",
@@ -17,32 +17,14 @@
     ],
     "require": {
         "php": "^5.5.9|>=7.0.8",
-        "symfony/polyfill-mbstring": "~1.0",
-        "symfony/debug": "~2.8|~3.0|~4.0"
+        "symfony/polyfill-mbstring": "~1.1",
+        "symfony/polyfill-php70": "~1.6"
     },
     "require-dev": {
-        "symfony/config": "~3.3|~4.0",
-        "symfony/event-dispatcher": "~2.8|~3.0|~4.0",
-        "symfony/dependency-injection": "~3.4|~4.0",
-        "symfony/lock": "~3.4|~4.0",
-        "symfony/process": "~3.3|~4.0",
-        "psr/log": "~1.0"
-    },
-    "provide": {
-        "psr/log-implementation": "1.0"
-    },
-    "suggest": {
-        "symfony/event-dispatcher": "",
-        "symfony/lock": "",
-        "symfony/process": "",
-        "psr/log": "For using the console logger"
-    },
-    "conflict": {
-        "symfony/dependency-injection": "<3.4",
-        "symfony/process": "<3.3"
+        "symfony/expression-language": "~2.8|~3.0|~4.0"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Component\\Console\\": "" },
+        "psr-4": { "Symfony\\Component\\HttpFoundation\\": "" },
         "exclude-from-classmap": [
             "/Tests/"
         ]
