@@ -1,8 +1,8 @@
 {
-    "name": "symfony/routing",
+    "name": "symfony/translation",
     "type": "library",
-    "description": "Symfony Routing Component",
-    "keywords": ["routing", "router", "URL", "URI"],
+    "description": "Symfony Translation Component",
+    "keywords": [],
     "homepage": "https://symfony.com",
     "license": "MIT",
     "authors": [
@@ -16,31 +16,37 @@
         }
     ],
     "require": {
-        "php": "^5.5.9|>=7.0.8"
+        "php": "^7.1.3",
+        "symfony/polyfill-mbstring": "~1.0",
+        "symfony/translation-contracts": "^1.1.6"
     },
     "require-dev": {
-        "symfony/config": "^3.3.1|~4.0",
-        "symfony/http-foundation": "~2.8|~3.0|~4.0",
+        "symfony/config": "~3.4|~4.0",
+        "symfony/console": "~3.4|~4.0",
+        "symfony/dependency-injection": "~3.4|~4.0",
+        "symfony/http-kernel": "~3.4|~4.0",
+        "symfony/intl": "~3.4|~4.0",
+        "symfony/service-contracts": "^1.1.2",
+        "symfony/var-dumper": "~3.4|~4.0",
         "symfony/yaml": "~3.4|~4.0",
-        "symfony/expression-language": "~2.8|~3.0|~4.0",
-        "symfony/dependency-injection": "~3.3|~4.0",
-        "doctrine/annotations": "~1.0",
+        "symfony/finder": "~2.8|~3.0|~4.0",
         "psr/log": "~1.0"
     },
     "conflict": {
-        "symfony/config": "<3.3.1",
-        "symfony/dependency-injection": "<3.3",
+        "symfony/config": "<3.4",
+        "symfony/dependency-injection": "<3.4",
         "symfony/yaml": "<3.4"
     },
+    "provide": {
+        "symfony/translation-implementation": "1.0"
+    },
     "suggest": {
-        "symfony/http-foundation": "For using a Symfony Request object",
-        "symfony/config": "For using the all-in-one router or any loader",
-        "symfony/yaml": "For using the YAML loader",
-        "symfony/expression-language": "For using expression matching",
-        "doctrine/annotations": "For using the annotation loader"
+        "symfony/config": "",
+        "symfony/yaml": "",
+        "psr/log-implementation": "To use logging capability in translator"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Component\\Routing\\": "" },
+        "psr-4": { "Symfony\\Component\\Translation\\": "" },
         "exclude-from-classmap": [
             "/Tests/"
         ]
@@ -48,7 +54,7 @@
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-master": "3.4-dev"
+            "dev-master": "4.3-dev"
         }
     }
 }

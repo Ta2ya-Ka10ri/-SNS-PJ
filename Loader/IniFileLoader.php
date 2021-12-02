@@ -12,17 +12,17 @@
 namespace Symfony\Component\Translation\Loader;
 
 /**
- * PhpFileLoader loads translations from PHP files returning an array of translations.
+ * IniFileLoader loads translations from an ini file.
  *
- * @author Fabien Potencier <fabien@symfony.com>
+ * @author stealth35
  */
-class PhpFileLoader extends FileLoader
+class IniFileLoader extends FileLoader
 {
     /**
      * {@inheritdoc}
      */
     protected function loadResource($resource)
     {
-        return require $resource;
+        return parse_ini_file($resource, true);
     }
 }
